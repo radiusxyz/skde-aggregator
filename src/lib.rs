@@ -205,12 +205,12 @@ impl<F: PrimeField> Circuit<F> for AggregateCircuit<F> {
 
 #[test]
 fn test_aggregate_circuit() {
-    use halo2wrong::curves::bn256::Fq;
+    use halo2wrong::curves::bn256::Fr;
     use halo2wrong::halo2::dev::MockProver;
     use num_bigint::RandomBits;
     use rand::{thread_rng, Rng};
     let mut rng = thread_rng();
-    let bits_len = AggregateCircuit::<Fq>::BITS_LEN as u64;
+    let bits_len = AggregateCircuit::<Fr>::BITS_LEN as u64;
     let mut n = BigUint::default();
     while n.bits() != bits_len {
         n = rng.sample(RandomBits::new(bits_len));
@@ -226,7 +226,7 @@ fn test_aggregate_circuit() {
         w: BigUint::from(1usize),
     };
 
-    for _ in 0..AggregateCircuit::<Fq>::MAX_SEQUENCER_NUMBER {
+    for _ in 0..AggregateCircuit::<Fr>::MAX_SEQUENCER_NUMBER {
         let u = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
         let v = rng.sample::<BigUint, _>(RandomBits::new(bits_len * 2)) % &n_square;
         let y = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
@@ -245,7 +245,7 @@ fn test_aggregate_circuit() {
         aggregated_key.w = aggregated_key.w * &w % &n_square;
     }
 
-    let circuit = AggregateCircuit::<Fq> {
+    let circuit = AggregateCircuit::<Fr> {
         partial_keys,
         aggregated_key,
         n,

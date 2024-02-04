@@ -1,4 +1,6 @@
-use halo2wrong::halo2::halo2curves::bn256::{Bn256, Fq, Fr, G1Affine};
+use halo2wrong::curves::bn256::Fr;
+use halo2wrong::halo2::halo2curves::bn256::{Bn256, G1Affine};
+
 use halo2wrong::halo2::{
     plonk::*,
     poly::{commitment::Params, VerificationStrategy},
@@ -64,7 +66,7 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
         w: BigUint::from(1usize),
     };
 
-    for _ in 0..AggregateCircuit::<Fq>::MAX_SEQUENCER_NUMBER {
+    for _ in 0..AggregateCircuit::<Fr>::MAX_SEQUENCER_NUMBER {
         let u = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
         let v = rng.sample::<BigUint, _>(RandomBits::new(bits_len * 2)) % &n_square;
         let y = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
@@ -177,7 +179,7 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
 }
 
 // fn criterion_benchmark(c: &mut Criterion) {
-//     bench_aggregate::<21>("skde aggregate", c);
+//     bench_aggregate::<20>("skde aggregate", c);
 // }
 
 // criterion_group!(benches, criterion_benchmark);

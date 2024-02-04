@@ -10,24 +10,6 @@ use crate::big_integer::*;
 
 pub const MAX_SEQUENCER_NUMBER: usize = 20;
 
-/// A parameter `u` in the Aggregate public key that is about to be assigned.
-// #[derive(Clone, Debug)]
-// pub enum AggregatePublicKeyU<F: PrimeField> {
-//     /// A variable parameter `u`.
-//     Var(UnassignedInteger<F>),
-//     /// A fixed parameter `u`.
-//     Fix(BigUint),
-// }
-
-// /// A parameter `e` in the assigned RSA public key.
-// #[derive(Clone, Debug)]
-// pub enum AssignedAggregatePublicKeyU<F: PrimeField> {
-//     /// A variable parameter `u`.
-//     Var(AssignedInteger<F, Fresh>),
-//     /// A fixed parameter `u`.
-//     Fix(BigUint),
-// }
-
 /// Aggregate extraction key that is about to be assigned.
 #[derive(Clone, Debug)]
 pub struct AggregateExtractionKey<F: PrimeField> {

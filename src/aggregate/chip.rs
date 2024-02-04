@@ -243,7 +243,7 @@ mod test {
     use num_bigint::RandomBits;
     use rand::{thread_rng, Rng};
 
-    macro_rules! impl_aggregate_encryption_test_circuit{
+    macro_rules! impl_aggregate_test_circuit{
         ($circuit_name:ident, $test_fn_name:ident, $bits_len:expr, $should_be_error:expr, $( $synth:tt )*) => {
             struct $circuit_name<F: PrimeField> {
                 partial_keys: Vec<ExtractionKey>,
@@ -368,9 +368,9 @@ mod test {
 
     use crate::UnassignedInteger;
 
-    impl_aggregate_encryption_test_circuit!(
-        TestAggregateEncryption2048Circuit,
-        test_aggregate_encryption_2048_circuit,
+    impl_aggregate_test_circuit!(
+        TestAggregate2048Circuit,
+        test_aggregate_2048_circuit,
         2048, // this is bit length of n. n^2's length is the double of n's.
         false,
         fn synthesize(
