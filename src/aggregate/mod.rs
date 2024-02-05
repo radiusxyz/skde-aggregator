@@ -4,15 +4,15 @@ pub mod instructions;
 use halo2wrong::halo2::circuit::Value;
 pub use instructions::*;
 
-use ff::PrimeField;
+use ff::{Field, PrimeField};
 
 use crate::big_integer::*;
 
-pub const MAX_SEQUENCER_NUMBER: usize = 20;
+pub const MAX_SEQUENCER_NUMBER: usize = 1;
 
 /// Aggregate extraction key that is about to be assigned.
 #[derive(Clone, Debug)]
-pub struct AggregateExtractionKey<F: PrimeField> {
+pub struct AggregateExtractionKey<F: Field> {
     pub u: UnassignedInteger<F>,
     pub v: UnassignedInteger<F>,
     pub y: UnassignedInteger<F>,
@@ -58,6 +58,7 @@ impl<F: PrimeField> AggregateExtractionKey<F> {
         };
         Self { u, v, y, w }
     }
+
 }
 
 /// An assigned Aggregate extraction key.

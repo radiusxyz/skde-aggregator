@@ -230,149 +230,76 @@ impl<F: PrimeField> AggregateChip<F> {
 #[cfg(test)]
 mod test {
 
+    use crate::UnassignedInteger;
+
     use super::*;
     use ff::FromUniformBytes;
-    use halo2wrong::halo2::dev::MockProver;
     use halo2wrong::halo2::{
-        // circuit::floor_planner,
         circuit::SimpleFloorPlanner,
         plonk::{Circuit, ConstraintSystem},
     };
-    use maingate::{decompose_big, RangeInstructions};
+    use maingate::{decompose_big, mock_prover_verify, RangeInstructions};
     use num_bigint::BigUint;
     use num_bigint::RandomBits;
     use rand::{thread_rng, Rng};
 
-    macro_rules! impl_aggregate_test_circuit{
-        ($circuit_name:ident, $test_fn_name:ident, $bits_len:expr, $should_be_error:expr, $( $synth:tt )*) => {
-            struct $circuit_name<F: PrimeField> {
-                partial_keys: Vec<ExtractionKey>,
-                aggregated_key: ExtractionKey,
-                n: BigUint,
-                n_square: BigUint,
-                _f: PhantomData<F>
-            }
-
-            impl<F: PrimeField> $circuit_name<F> {
-                const BITS_LEN:usize = $bits_len; // n's bit length
-                const LIMB_WIDTH:usize = AggregateChip::<F>::LIMB_WIDTH;
-                fn aggregate_chip(&self, config: AggregateConfig) -> AggregateChip<F> {
-                    AggregateChip::new(config, Self::BITS_LEN)
-                }
-            }
-
-            impl<F: PrimeField> Circuit<F> for $circuit_name<F> {
-                type Config = AggregateConfig;
-                type FloorPlanner = SimpleFloorPlanner;
-
-                fn without_witnesses(&self) -> Self {
-                    unimplemented!();
-                }
-
-                fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
-                    let main_gate_config = MainGate::<F>::configure(meta);
-                    let (composition_bit_lens, overflow_bit_lens) =
-                        AggregateChip::<F>::compute_range_lens(
-                            Self::BITS_LEN / Self::LIMB_WIDTH,
-                        );
-                    let range_config = RangeChip::<F>::configure(
-                        meta,
-                        &main_gate_config,
-                        composition_bit_lens,
-                        overflow_bit_lens,
-                    );
-                    let (square_composition_bit_lens, square_overflow_bit_lens) =
-                        AggregateChip::<F>::compute_range_lens(
-                            Self::BITS_LEN * 2 / Self::LIMB_WIDTH,
-                        );
-                    let square_range_config = RangeChip::<F>::configure(
-                        meta,
-                        &main_gate_config,
-                        square_composition_bit_lens,
-                        square_overflow_bit_lens,
-                    );
-                    let bigint_config = BigIntConfig::new(range_config.clone(), main_gate_config.clone());
-                    let bigint_square_config = BigIntConfig::new(square_range_config.clone(), main_gate_config.clone());
-
-                    //TODO add instance to check agg key
-                    // let instance = meta.instance_column();
-                    // meta.enable_equality(instance);
-
-                    Self::Config{
-                        bigint_config,
-                        bigint_square_config,
-                        // instance
-                    }
-                }
-
-                $( $synth )*
-
-            }
-
-            #[test]
-            fn $test_fn_name() {
-                fn run<F: FromUniformBytes<64> + Ord>() {
-                    let mut rng = thread_rng();
-                    let bits_len = $circuit_name::<F>::BITS_LEN as u64;
-                    let mut n = BigUint::default();
-                    while n.bits() != bits_len {
-                        n = rng.sample(RandomBits::new(bits_len));
-                    }
-                    let n_square = &n * &n;
-
-                    let mut partial_keys = vec![];
-
-                    let mut aggregated_key = ExtractionKey{
-                        u: BigUint::from(1usize), v: BigUint::from(1usize), y: BigUint::from(1usize), w: BigUint::from(1usize),
-                    };
-
-                    for _ in 0..MAX_SEQUENCER_NUMBER{
-                        let u = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
-                        let v = rng.sample::<BigUint, _>(RandomBits::new(bits_len*2)) % &n_square;
-                        let y = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
-                        let w = rng.sample::<BigUint, _>(RandomBits::new(bits_len*2)) % &n_square;
-
-                        partial_keys.push(ExtractionKey{u: u.clone(), v: v.clone(), y: y.clone(), w: w.clone()});
-
-                        aggregated_key.u = aggregated_key.u * &u % &n;
-                        aggregated_key.v = aggregated_key.v * &v % &n_square;
-                        aggregated_key.y = aggregated_key.y * &y % &n;
-                        aggregated_key.w = aggregated_key.w * &w % &n_square;
-                    }
-
-                    let circuit = $circuit_name::<F> {
-                        partial_keys,
-                        aggregated_key,
-                        n,
-                        n_square,
-                        _f: PhantomData
-                    };
-
-                    let public_inputs = vec![vec![]];
-                    let k = 20;
-                    let prover = match MockProver::run(k, &circuit, public_inputs) {
-                        Ok(prover) => prover,
-                        Err(e) => panic!("{:#?}", e)
-                    };
-                    assert_eq!(prover.verify().is_err(), $should_be_error);
-                }
-
-                use halo2wrong::curves::bn256::Fq as BnFq;
-                // use halo2wrong::curves::pasta::{Fp as PastaFp, Fq as PastaFq};
-                run::<BnFq>();
-                // run::<PastaFp>();
-                // run::<PastaFq>();
-            }
-        };
+    struct TestAggregateKeyCircuit<F: PrimeField> {
+        partial_keys: Vec<ExtractionKey>,
+        aggregated_key: ExtractionKey,
+        n: BigUint,
+        n_square: BigUint,
+        _f: PhantomData<F>,
     }
 
-    use crate::UnassignedInteger;
+    impl<F: PrimeField> TestAggregateKeyCircuit<F> {
+        const BITS_LEN: usize = 2048; // n's bit length
+        const LIMB_WIDTH: usize = AggregateChip::<F>::LIMB_WIDTH;
+        fn aggregate_chip(&self, config: AggregateConfig) -> AggregateChip<F> {
+            AggregateChip::new(config, Self::BITS_LEN)
+        }
+    }
 
-    impl_aggregate_test_circuit!(
-        TestAggregate2048Circuit,
-        test_aggregate_2048_circuit,
-        2048, // this is bit length of n. n^2's length is the double of n's.
-        false,
+    impl<F: PrimeField> Circuit<F> for TestAggregateKeyCircuit<F> {
+        type Config = AggregateConfig;
+        type FloorPlanner = SimpleFloorPlanner;
+
+        fn without_witnesses(&self) -> Self {
+            unimplemented!();
+        }
+
+        fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
+            let main_gate_config = MainGate::<F>::configure(meta);
+            let (composition_bit_lens, overflow_bit_lens) =
+                AggregateChip::<F>::compute_range_lens(Self::BITS_LEN / Self::LIMB_WIDTH);
+            let range_config = RangeChip::<F>::configure(
+                meta,
+                &main_gate_config,
+                composition_bit_lens,
+                overflow_bit_lens,
+            );
+            let (square_composition_bit_lens, square_overflow_bit_lens) =
+                AggregateChip::<F>::compute_range_lens(Self::BITS_LEN * 2 / Self::LIMB_WIDTH);
+            let square_range_config = RangeChip::<F>::configure(
+                meta,
+                &main_gate_config,
+                square_composition_bit_lens,
+                square_overflow_bit_lens,
+            );
+            let bigint_config = BigIntConfig::new(range_config.clone(), main_gate_config.clone());
+            let bigint_square_config =
+                BigIntConfig::new(square_range_config.clone(), main_gate_config.clone());
+
+            //TODO add instance to check agg key
+            // let instance = meta.instance_column();
+            // meta.enable_equality(instance);
+
+            Self::Config {
+                bigint_config,
+                bigint_square_config,
+                // instance
+            }
+        }
+
         fn synthesize(
             &self,
             config: Self::Config,
@@ -384,7 +311,7 @@ mod test {
             let limb_width = Self::LIMB_WIDTH;
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
             layouter.assign_region(
-                || "aggregate test with 2048 bits RSA parameter",
+                || "aggregate key test with 2048 bits RSA parameter",
                 |region| {
                     let offset = 0;
                     let ctx = &mut RegionCtx::new(region, offset);
@@ -516,7 +443,66 @@ mod test {
             // for (i, cell) in agg_extraction_key.into_iter().enumerate() {
             //     layouter.constrain_instance(cell, config.instance, i);
             // }
+
             Ok(())
         }
-    );
+    }
+
+    #[test]
+    fn test_aggregate_key_circuit() {
+        fn run<F: FromUniformBytes<64> + Ord>() {
+            let mut rng = thread_rng();
+            let bits_len = TestAggregateKeyCircuit::<F>::BITS_LEN as u64;
+            let mut n = BigUint::default();
+            while n.bits() != bits_len {
+                n = rng.sample(RandomBits::new(bits_len));
+            }
+            let n_square = &n * &n;
+
+            let mut partial_keys = vec![];
+
+            let mut aggregated_key = ExtractionKey {
+                u: BigUint::from(1usize),
+                v: BigUint::from(1usize),
+                y: BigUint::from(1usize),
+                w: BigUint::from(1usize),
+            };
+
+            for _ in 0..MAX_SEQUENCER_NUMBER {
+                let u = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
+                let v = rng.sample::<BigUint, _>(RandomBits::new(bits_len * 2)) % &n_square;
+                let y = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
+                let w = rng.sample::<BigUint, _>(RandomBits::new(bits_len * 2)) % &n_square;
+
+                partial_keys.push(ExtractionKey {
+                    u: u.clone(),
+                    v: v.clone(),
+                    y: y.clone(),
+                    w: w.clone(),
+                });
+
+                aggregated_key.u = aggregated_key.u * &u % &n;
+                aggregated_key.v = aggregated_key.v * &v % &n_square;
+                aggregated_key.y = aggregated_key.y * &y % &n;
+                aggregated_key.w = aggregated_key.w * &w % &n_square;
+            }
+
+            let circuit = TestAggregateKeyCircuit::<F> {
+                partial_keys,
+                aggregated_key,
+                n,
+                n_square,
+                _f: PhantomData,
+            };
+
+            let public_inputs = vec![vec![]];
+            mock_prover_verify(&circuit, public_inputs);
+        }
+
+        use halo2wrong::curves::bn256::Fq as BnFq;
+        // use halo2wrong::curves::pasta::{Fp as PastaFp, Fq as PastaFq};
+        run::<BnFq>();
+        // run::<PastaFp>();
+        // run::<PastaFq>();
+    }
 }

@@ -191,7 +191,7 @@ fn main() {
         .nresamples(10); // # of iteration
 
     let benches: Vec<Box<dyn Fn(&mut Criterion)>> =
-        vec![Box::new(|c| bench_aggregate::<20>("skde aggregate", c))];
+        vec![Box::new(|c| bench_aggregate::<14>("skde aggregate", c))];
 
     for bench in benches {
         bench(&mut criterion);
