@@ -3,3 +3,11 @@
 /benches/data/*
 
 .vscode
+
+/target
+
+*/.rs.bk
+
+.DS_Store
+
+Cargo.lock
