@@ -235,7 +235,7 @@ mod test {
     use super::*;
     use ff::FromUniformBytes;
     use halo2wrong::halo2::{
-        circuit::SimpleFloorPlanner,
+        circuit::{Chip, SimpleFloorPlanner},
         plonk::{Circuit, ConstraintSystem},
     };
     use maingate::{decompose_big, mock_prover_verify, RangeInstructions};
@@ -310,7 +310,7 @@ mod test {
             let bigint_square_chip = aggregate_chip.bigint_square_chip();
             let limb_width = Self::LIMB_WIDTH;
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
-            layouter.assign_region(
+            let (partial_keys_result, valid_agg_key_result) = layouter.assign_region(
                 || "aggregate key test with 2048 bits RSA parameter",
                 |region| {
                     let offset = 0;
@@ -363,40 +363,7 @@ mod test {
                         );
                     }
                     let partial_keys = AssignedAggregatePartialKeys::new(partial_keys_assigned);
-
-                    let agg_u_limbs =
-                        decompose_big::<F>(self.aggregated_key.u.clone(), num_limbs, limb_width);
-                    let agg_v_limb = decompose_big::<F>(
-                        self.aggregated_key.v.clone(),
-                        num_limbs * 2,
-                        limb_width,
-                    );
-                    let agg_y_limbs =
-                        decompose_big::<F>(self.aggregated_key.y.clone(), num_limbs, limb_width);
-                    let agg_w_limb = decompose_big::<F>(
-                        self.aggregated_key.w.clone(),
-                        num_limbs * 2,
-                        limb_width,
-                    );
-                    let agg_u_unassigned = UnassignedInteger::from(agg_u_limbs);
-                    let agg_v_unassigned = UnassignedInteger::from(agg_v_limb);
-                    let agg_y_unassigned = UnassignedInteger::from(agg_y_limbs);
-                    let agg_w_unassigned = UnassignedInteger::from(agg_w_limb);
-                    let agg_key_unassigned = AggregateExtractionKey::new(
-                        agg_u_unassigned,
-                        agg_v_unassigned,
-                        agg_y_unassigned,
-                        agg_w_unassigned,
-                    );
-                    let agg_key_assigned =
-                        aggregate_chip.assign_extraction_key(ctx, agg_key_unassigned)?;
-                    // let agg_key = AssignedAggregateExtractionKey::new(
-                    //     agg_key_assigned.u.clone(),
-                    //     agg_key_assigned.v.clone(),
-                    //     agg_key_assigned.y.clone(),
-                    //     agg_key_assigned.w.clone(),
-                    // );
-
+                    
                     let public_params_unassigned = AggregatePublicParams::new(
                         n_unassigned.clone(),
                         n_square_unassigned.clone(),
@@ -409,31 +376,24 @@ mod test {
                         &public_params.clone(),
                     )?;
 
-                    // TODO add instance to check agg key
-                    // let u_cells = aggregated_extraction_key
-                    //     .u
-                    //     .limbs()
-                    //     .into_iter()
-                    //     .map(|v| v.assigned_val().cell())
-                    //     .collect::<Vec<Cell>>();
-                    // Ok(u_cells)
-
-                    bigint_chip.assert_equal_fresh(ctx, &valid_agg_key.u, &agg_key_assigned.u)?;
-                    bigint_square_chip.assert_equal_fresh(
-                        ctx,
-                        &valid_agg_key.v,
-                        &agg_key_assigned.v,
-                    )?;
-                    bigint_chip.assert_equal_fresh(ctx, &valid_agg_key.y, &agg_key_assigned.y)?;
-                    bigint_square_chip.assert_equal_fresh(
-                        ctx,
-                        &valid_agg_key.w,
-                        &agg_key_assigned.w,
-                    )?;
-
-                    Ok(())
+                    Ok((partial_keys, valid_agg_key))
                 },
             )?;
+
+            let instances = bigint_chip.main_gate().config().instance;
+
+            (0..num_limbs).try_for_each(|i| -> Result<(), Error> {
+                layouter.constrain_instance(valid_agg_key_result.u.limb(i).cell(), instances, i)?;
+                layouter.constrain_instance(valid_agg_key_result.y.limb(i).cell(), instances, num_limbs * 3 + i)?;
+                Ok(())
+            })?;
+        
+            (0..num_limbs * 2).try_for_each(|i| -> Result<(), Error> {
+                layouter.constrain_instance(valid_agg_key_result.v.limb(i).cell(), instances, num_limbs + i)?;
+                layouter.constrain_instance(valid_agg_key_result.w.limb(i).cell(), instances, num_limbs * 4 + i)?;
+                Ok(())
+            })?;
+
             let range_chip = bigint_chip.range_chip();
             let range_square_chip = bigint_square_chip.range_chip();
             range_chip.load_table(&mut layouter)?;
@@ -454,6 +414,8 @@ mod test {
             let mut rng = thread_rng();
             let bits_len = TestAggregateKeyCircuit::<F>::BITS_LEN as u64;
             let mut n = BigUint::default();
+            let limb_width = TestAggregateKeyCircuit::<F>::LIMB_WIDTH;
+            let num_limbs = bits_len as usize/limb_width;
             while n.bits() != bits_len {
                 n = rng.sample(RandomBits::new(bits_len));
             }
@@ -487,6 +449,30 @@ mod test {
                 aggregated_key.w = aggregated_key.w * &w % &n_square;
             }
 
+            let u_limbs = decompose_big::<F>(
+                aggregated_key.u.clone(),
+                num_limbs,
+                limb_width,
+            );
+
+            let v_limbs = decompose_big::<F>(
+                aggregated_key.v.clone(),
+                num_limbs * 2,
+                limb_width,
+            );
+
+            let y_limbs = decompose_big::<F>(
+                aggregated_key.y.clone(),
+                num_limbs,
+                limb_width,
+            );
+
+            let w_limbs = decompose_big::<F>(
+                aggregated_key.w.clone(),
+                num_limbs * 2,
+                limb_width,
+            );
+
             let circuit = TestAggregateKeyCircuit::<F> {
                 partial_keys,
                 aggregated_key,
@@ -495,7 +481,7 @@ mod test {
                 _f: PhantomData,
             };
 
-            let public_inputs = vec![vec![]];
+            let public_inputs = vec![[[[u_limbs,v_limbs].concat(),y_limbs].concat(), w_limbs].concat()];
             mock_prover_verify(&circuit, public_inputs);
         }
 
