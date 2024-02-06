@@ -8,7 +8,7 @@ use ff::{Field, PrimeField};
 
 use crate::big_integer::*;
 
-pub const MAX_SEQUENCER_NUMBER: usize = 1;
+pub const MAX_SEQUENCER_NUMBER: usize = 2;
 pub const BITS_LEN: usize = 2048; // n's bit length
 pub const LIMB_WIDTH: usize = 64;
 pub const LIMB_COUNT: usize = BITS_LEN / LIMB_WIDTH;

@@ -59,7 +59,7 @@ impl<F: PrimeField> DecomposedExtractionKey<F> {
 }
 
 impl ExtractionKey {
-    fn decompose_extraction_key<F: PrimeField>(
+    pub fn decompose_extraction_key<F: PrimeField>(
         extraction_keys: &ExtractionKey,
     ) -> DecomposedExtractionKey<F> {
         let num_limbs = LIMB_COUNT;
@@ -80,7 +80,7 @@ impl ExtractionKey {
         }
     }
 
-    fn decompose_and_combine_all_partial_keys<F: PrimeField>(
+    pub fn decompose_and_combine_all_partial_keys<F: PrimeField>(
         extraction_keys: Vec<ExtractionKey>,
     ) -> Vec<F> {
         let mut combined_partial = Vec::new();
@@ -331,7 +331,7 @@ mod test {
         }
     }
 
-    fn apply_aggregate_key_instance_constraints<F: PrimeField>(
+    pub fn apply_aggregate_key_instance_constraints<F: PrimeField>(
         layouter: &mut impl halo2wrong::halo2::circuit::Layouter<F>,
         valid_agg_key_result: &AssignedExtractionKey<F>,
         num_limbs: usize,
@@ -361,7 +361,7 @@ mod test {
         Ok(())
     }
 
-    fn apply_partial_key_instance_constraints<F: PrimeField>(
+    pub fn apply_partial_key_instance_constraints<F: PrimeField>(
         layouter: &mut impl halo2wrong::halo2::circuit::Layouter<F>,
         partial_key_result: &AssignedAggregatePartialKeys<F>,
         num_limbs: usize,
@@ -374,13 +374,29 @@ mod test {
             let w_limb = &partial_key_result.partial_keys[k].w;
 
             (0..num_limbs).try_for_each(|i| -> Result<(), Error> {
-                layouter.constrain_instance(u_limb.limb(i).cell(), instances, num_limbs * (6 + k) + i)?;
-                layouter.constrain_instance(y_limb.limb(i).cell(), instances, num_limbs * (9 + k) + i)
+                layouter.constrain_instance(
+                    u_limb.limb(i).cell(),
+                    instances,
+                    num_limbs * (6 + k) + i,
+                )?;
+                layouter.constrain_instance(
+                    y_limb.limb(i).cell(),
+                    instances,
+                    num_limbs * (9 + k) + i,
+                )
             })?;
 
             (0..num_limbs * 2).try_for_each(|i| -> Result<(), Error> {
-                layouter.constrain_instance(v_limb.limb(i).cell(), instances, num_limbs * (7 + k) + i)?;
-                layouter.constrain_instance(w_limb.limb(i).cell(), instances, num_limbs * (10 + k) + i)
+                layouter.constrain_instance(
+                    v_limb.limb(i).cell(),
+                    instances,
+                    num_limbs * (7 + k) + i,
+                )?;
+                layouter.constrain_instance(
+                    w_limb.limb(i).cell(),
+                    instances,
+                    num_limbs * (10 + k) + i,
+                )
             })?;
 
             Ok(())
@@ -516,8 +532,6 @@ mod test {
         fn run<F: FromUniformBytes<64> + Ord>() {
             let mut rng = thread_rng();
             let bits_len = BITS_LEN as u64;
-            let limb_width = LIMB_WIDTH;
-            let num_limbs = LIMB_COUNT;
             let mut n = BigUint::default();
             while n.bits() != bits_len {
                 n = rng.sample(RandomBits::new(bits_len));
@@ -572,7 +586,6 @@ mod test {
             combined_limbs.extend(combined_partial_limbs);
 
             let public_inputs = vec![combined_limbs];
-            // let public_inputs = vec![combined_limbs]; //, combined_partial_limbs];
             mock_prover_verify(&circuit, public_inputs);
         }
 
