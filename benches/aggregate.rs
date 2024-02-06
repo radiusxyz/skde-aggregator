@@ -110,7 +110,6 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
         n_square,
         _f: PhantomData,
     };
-    
 
     // write verifying key
     let vk_path = "./benches/data/vk_aggregate".to_owned() + &K.to_string();
@@ -210,7 +209,7 @@ fn main() {
         .nresamples(10); // # of iteration
 
     let benches: Vec<Box<dyn Fn(&mut Criterion)>> =
-        vec![Box::new(|c| bench_aggregate::<16>("skde aggregate", c))];
+        vec![Box::new(|c| bench_aggregate::<20>("skde aggregate", c))];
 
     for bench in benches {
         bench(&mut criterion);

@@ -337,12 +337,17 @@ mod test {
         num_limbs: usize,
         instances: Column<Instance>,
     ) -> Result<(), Error> {
+        // let u_index = 0_usize;
+        let y_index = num_limbs * 3;
+        let v_index = num_limbs;
+        let w_index = num_limbs * 4;
+
         (0..num_limbs).try_for_each(|i| -> Result<(), Error> {
             layouter.constrain_instance(valid_agg_key_result.u.limb(i).cell(), instances, i)?;
             layouter.constrain_instance(
                 valid_agg_key_result.y.limb(i).cell(),
                 instances,
-                num_limbs * 3 + i,
+                y_index + i,
             )
         })?;
 
@@ -350,18 +355,18 @@ mod test {
             layouter.constrain_instance(
                 valid_agg_key_result.v.limb(i).cell(),
                 instances,
-                num_limbs + i,
+                v_index + i,
             )?;
             layouter.constrain_instance(
                 valid_agg_key_result.w.limb(i).cell(),
                 instances,
-                num_limbs * 4 + i,
+                w_index + i,
             )
         })?;
         Ok(())
     }
 
-    pub fn apply_partial_key_instance_constraints<F: PrimeField>(
+    fn apply_partial_key_instance_constraints<F: PrimeField>(
         layouter: &mut impl halo2wrong::halo2::circuit::Layouter<F>,
         partial_key_result: &AssignedAggregatePartialKeys<F>,
         num_limbs: usize,
@@ -373,30 +378,20 @@ mod test {
             let y_limb = &partial_key_result.partial_keys[k].y;
             let w_limb = &partial_key_result.partial_keys[k].w;
 
+            let base_index = k * 6 * num_limbs;
+            let u_index = base_index + num_limbs * 6;
+            let v_index = base_index + num_limbs * 7;
+            let y_index = base_index + num_limbs * 9;
+            let w_index = base_index + num_limbs * 10;
+
             (0..num_limbs).try_for_each(|i| -> Result<(), Error> {
-                layouter.constrain_instance(
-                    u_limb.limb(i).cell(),
-                    instances,
-                    num_limbs * (6 + k) + i,
-                )?;
-                layouter.constrain_instance(
-                    y_limb.limb(i).cell(),
-                    instances,
-                    num_limbs * (9 + k) + i,
-                )
+                layouter.constrain_instance(u_limb.limb(i).cell(), instances, u_index + i)?;
+                layouter.constrain_instance(y_limb.limb(i).cell(), instances, y_index + i)
             })?;
 
             (0..num_limbs * 2).try_for_each(|i| -> Result<(), Error> {
-                layouter.constrain_instance(
-                    v_limb.limb(i).cell(),
-                    instances,
-                    num_limbs * (7 + k) + i,
-                )?;
-                layouter.constrain_instance(
-                    w_limb.limb(i).cell(),
-                    instances,
-                    num_limbs * (10 + k) + i,
-                )
+                layouter.constrain_instance(v_limb.limb(i).cell(), instances, v_index + i)?;
+                layouter.constrain_instance(w_limb.limb(i).cell(), instances, w_index + i)
             })?;
 
             Ok(())
@@ -509,14 +504,12 @@ mod test {
                 instances,
             )?;
 
-            (0..MAX_SEQUENCER_NUMBER).try_for_each(|i| -> Result<(), Error> {
-                apply_partial_key_instance_constraints(
-                    &mut layouter,
-                    &partial_keys_result,
-                    num_limbs,
-                    instances,
-                )
-            })?;
+            apply_partial_key_instance_constraints(
+                &mut layouter,
+                &partial_keys_result,
+                num_limbs,
+                instances,
+            )?;
 
             let range_chip = bigint_chip.range_chip();
             let range_square_chip = bigint_square_chip.range_chip();
