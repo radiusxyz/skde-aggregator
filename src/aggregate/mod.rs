@@ -9,6 +9,9 @@ use ff::{Field, PrimeField};
 use crate::big_integer::*;
 
 pub const MAX_SEQUENCER_NUMBER: usize = 1;
+pub const BITS_LEN: usize = 2048; // n's bit length
+pub const LIMB_WIDTH: usize = 64;
+pub const LIMB_COUNT: usize = BITS_LEN / LIMB_WIDTH;
 
 /// Aggregate extraction key that is about to be assigned.
 #[derive(Clone, Debug)]
@@ -58,20 +61,19 @@ impl<F: PrimeField> AggregateExtractionKey<F> {
         };
         Self { u, v, y, w }
     }
-
 }
 
 /// An assigned Aggregate extraction key.
 #[derive(Clone, Debug)]
-pub struct AssignedAggregateExtractionKey<F: PrimeField> {
+pub struct AssignedExtractionKey<F: PrimeField> {
     pub u: AssignedInteger<F, Fresh>,
     pub v: AssignedInteger<F, Fresh>,
     pub y: AssignedInteger<F, Fresh>,
     pub w: AssignedInteger<F, Fresh>,
 }
 
-impl<F: PrimeField> AssignedAggregateExtractionKey<F> {
-    /// Creates new [`AssignedAggregateExtractionKey`] from assigned `u,v,y,w`.
+impl<F: PrimeField> AssignedExtractionKey<F> {
+    /// Creates new [`AssignedExtractionKey`] from assigned `u,v,y,w`.
     ///
     /// # Arguments
     /// * u - an assigned parameter `u`.
@@ -80,7 +82,7 @@ impl<F: PrimeField> AssignedAggregateExtractionKey<F> {
     /// * w - an assigned parameter `uw`.
     ///
     /// # Return values
-    /// Returns new [`AssignedAggregateExtractionKey`].
+    /// Returns new [`AssignedExtractionKey`].
     pub fn new(
         u: AssignedInteger<F, Fresh>,
         v: AssignedInteger<F, Fresh>,
@@ -177,7 +179,7 @@ impl<F: PrimeField> AggregatePartialKeys<F> {
 /// An assigned Aggregate public key.
 #[derive(Clone, Debug)]
 pub struct AssignedAggregatePartialKeys<F: PrimeField> {
-    pub partial_keys: Vec<AssignedAggregateExtractionKey<F>>,
+    pub partial_keys: Vec<AssignedExtractionKey<F>>,
 }
 
 impl<F: PrimeField> AssignedAggregatePartialKeys<F> {
@@ -188,7 +190,7 @@ impl<F: PrimeField> AssignedAggregatePartialKeys<F> {
     ///
     /// # Return values
     /// Returns new [`AssignedAggregatePartialKeys`].
-    pub fn new(partial_keys: Vec<AssignedAggregateExtractionKey<F>>) -> Self {
+    pub fn new(partial_keys: Vec<AssignedExtractionKey<F>>) -> Self {
         Self { partial_keys }
     }
 }

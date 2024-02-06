@@ -1,6 +1,6 @@
 use crate::{
-    AggregateExtractionKey, AggregatePublicParams, AssignedAggregateExtractionKey,
-    AssignedAggregatePartialKeys, AssignedAggregatePublicParams,
+    AggregateExtractionKey, AggregatePublicParams, AssignedAggregatePartialKeys,
+    AssignedAggregatePublicParams, AssignedExtractionKey,
 };
 use ff::PrimeField;
 use halo2wrong::halo2::plonk::Error;
@@ -15,12 +15,12 @@ pub trait AggregateInstructions<F: PrimeField> {
         public_params: AggregatePublicParams<F>,
     ) -> Result<AssignedAggregatePublicParams<F>, Error>;
 
-    /// Assigns a [`AssignedAggregateExtractionKey`].
+    /// Assigns a [`AssignedExtractionKey`].
     fn assign_extraction_key(
         &self,
         ctx: &mut RegionCtx<'_, F>,
         extraction_key: AggregateExtractionKey<F>,
-    ) -> Result<AssignedAggregateExtractionKey<F>, Error>;
+    ) -> Result<AssignedExtractionKey<F>, Error>;
 
     /// Given a base `x`, a Aggregate public key (e,n), performs the modular power `x^e mod n`.
     fn aggregate(
@@ -28,5 +28,5 @@ pub trait AggregateInstructions<F: PrimeField> {
         ctx: &mut RegionCtx<'_, F>,
         partial_keys: &AssignedAggregatePartialKeys<F>,
         public_params: &AssignedAggregatePublicParams<F>,
-    ) -> Result<AssignedAggregateExtractionKey<F>, Error>;
+    ) -> Result<AssignedExtractionKey<F>, Error>;
 }
