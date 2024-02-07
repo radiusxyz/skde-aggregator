@@ -16,11 +16,15 @@ use halo2wrong::halo2::{
     transcript::{TranscriptReadBuffer, TranscriptWriterBuffer},
     SerdeFormat,
 };
-use skde::{AggregateCircuit, ExtractionKey};
+use skde::{
+    aggregate, AggregateCircuit, DecomposedExtractionKey, ExtractionKey, BITS_LEN,
+    MAX_SEQUENCER_NUMBER,
+};
 
 use num_bigint::{BigUint, RandomBits};
 use rand::{thread_rng, Rng};
 use rand_core::OsRng;
+// use core::slice::SlicePattern;
 use std::{
     fs::File,
     io::{BufReader, Read, Write},
@@ -50,7 +54,7 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
         ParamsKZG::read::<_>(&mut BufReader::new(params_fs)).expect("Failed to read params");
 
     let mut rng = thread_rng();
-    let bits_len = AggregateCircuit::<Fr>::BITS_LEN as u64;
+    let bits_len = BITS_LEN as u64;
     let mut n = BigUint::default();
     while n.bits() != bits_len {
         n = rng.sample(RandomBits::new(bits_len));
@@ -66,7 +70,7 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
         w: BigUint::from(1usize),
     };
 
-    for _ in 0..AggregateCircuit::<Fr>::MAX_SEQUENCER_NUMBER {
+    for _ in 0..MAX_SEQUENCER_NUMBER {
         let u = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
         let v = rng.sample::<BigUint, _>(RandomBits::new(bits_len * 2)) % &n_square;
         let y = rng.sample::<BigUint, _>(RandomBits::new(bits_len)) % &n;
@@ -84,6 +88,20 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
         aggregated_key.y = aggregated_key.y * &y % &n;
         aggregated_key.w = aggregated_key.w * &w % &n_square;
     }
+
+    // set public input
+    let combined_partial_limbs: Vec<Fr> =
+        aggregate::chip::ExtractionKey::decompose_and_combine_all_partial_keys(
+            partial_keys.clone(),
+        );
+
+    let decomposed_extraction_key: DecomposedExtractionKey<Fr> =
+        aggregate::chip::ExtractionKey::decompose_extraction_key(&aggregated_key.clone());
+    let mut combined_limbs = decomposed_extraction_key.combine_limbs();
+
+    combined_limbs.extend(combined_partial_limbs);
+
+    let public_inputs = [combined_limbs.as_slice()];
 
     let circuit = AggregateCircuit::<Fr> {
         partial_keys,
@@ -138,7 +156,7 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
                     &params,
                     &pk,
                     &[circuit.clone()],
-                    &[&[&[]]],
+                    &[public_inputs.as_slice()],
                     &mut OsRng,
                     &mut transcript,
                 )
@@ -167,7 +185,7 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
                         params.verifier_params(),
                         pk.get_vk(),
                         AccumulatorStrategy::new(params.verifier_params()),
-                        &[&[&[]]],
+                        &[public_inputs.as_slice()],
                         &mut transcript,
                     )
                     .unwrap(),
