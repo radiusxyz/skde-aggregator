@@ -17,4 +17,22 @@ To test our test_aggregate_circuit test code, run
 cargo test test_aggregate_circuit
 ```
 
+## Bench
 
+To run all benches, run
+
+````bash
+cargo bench
+````
+
+To run a specific bench, run
+
+```bash
+cargo bench --bench $name
+````
+
+For example, to run a bench `aggregate` defined in "benches" folder
+
+```bash
+cargo bench --bench aggregate
+```
