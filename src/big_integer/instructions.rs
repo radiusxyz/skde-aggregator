@@ -1,4 +1,4 @@
-use crate::{AssignedInteger, Fresh, Muled, RangeType, RefreshAux, UnassignedInteger};
+use crate::{AssignedInteger, Fresh, Muled, RefreshAux, UnassignedInteger};
 use halo2wrong::halo2::{arithmetic::Field, plonk::Error};
 use maingate::{AssignedValue, RegionCtx};
 use num_bigint::BigUint;
