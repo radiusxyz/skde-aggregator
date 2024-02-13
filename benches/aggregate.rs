@@ -36,6 +36,7 @@ use criterion::Criterion;
 // Create the file and directory if it does not exist
 fn ensure_directory_exists(path: &Path) {
     if let Some(parent) = path.parent() {
+        let _ = fs::remove_file(path);
         fs::create_dir_all(parent).expect("Failed to create directories");
     }
 }
@@ -59,12 +60,11 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
     // set params for protocol
     let params_path = format!("./benches/data/params_aggregate{}", K);
 
-    if File::open(&params_path).is_err() {
-        let params = ParamsKZG::<Bn256>::setup(K, OsRng);
-        let mut buf = Vec::new();
-        params.write(&mut buf).expect("Failed to write params");
-        write_to_file(&params_path, &buf);
-    }
+    let params = ParamsKZG::<Bn256>::setup(K, OsRng);
+    let mut buf = Vec::new();
+    params.write(&mut buf).expect("Failed to write params");
+    write_to_file(&params_path, &buf);
+
     let params_fs = File::open(params_path).expect("Failed to load params");
     let params =
         ParamsKZG::read::<_>(&mut BufReader::new(params_fs)).expect("Failed to read params");
@@ -130,17 +130,16 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
     // write verifying key
     let vk_path = format!("./benches/data/vk_aggregate{}", K);
 
-    if File::open(&vk_path).is_err() {
-        let vk = keygen_vk(&params, &circuit.clone()).expect("keygen_vk failed");
-        let mut buf = Vec::new();
-        match vk.write(&mut buf, SerdeFormat::RawBytes) {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("Error writing to buffer: {:?}", e);
-            }
+    let vk = keygen_vk(&params, &circuit.clone()).expect("keygen_vk failed");
+    let mut buf = Vec::new();
+    match vk.write(&mut buf, SerdeFormat::RawBytes) {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("Error writing to buffer: {:?}", e);
         }
-        write_to_file(&vk_path, &buf);
     }
+    write_to_file(&vk_path, &buf);
+
     let vk_fs = File::open(vk_path).expect("Failed to load vk");
     let vk = VerifyingKey::<G1Affine>::read::<BufReader<File>, AggregateCircuit<Fr>>(
         &mut BufReader::new(vk_fs),
@@ -151,17 +150,16 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
     // write proving key
     let pk_path = format!("./benches/data/pk_aggregate{}", K);
 
-    if File::open(&pk_path).is_err() {
-        let pk = keygen_pk(&params, vk, &circuit.clone()).expect("keygen_pk failed");
-        let mut buf = Vec::new();
-        match pk.write(&mut buf, SerdeFormat::RawBytes) {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("Error writing to buffer: {:?}", e);
-            }
+    let pk = keygen_pk(&params, vk, &circuit.clone()).expect("keygen_pk failed");
+    let mut buf = Vec::new();
+    match pk.write(&mut buf, SerdeFormat::RawBytes) {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("Error writing to buffer: {:?}", e);
         }
-        write_to_file(&pk_path, &buf);
     }
+    write_to_file(&pk_path, &buf);
+
     let pk_fs = File::open(pk_path).expect("Failed to load pk");
     let pk = ProvingKey::<G1Affine>::read::<BufReader<File>, AggregateCircuit<Fr>>(
         &mut BufReader::new(pk_fs),
@@ -172,26 +170,24 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
     // benchmark the proof generation and store the proof
     let proof_path = format!("./benches/data/proof_aggregate{}", K);
 
-    if File::open(&proof_path).is_err() {
-        let mut transcript = Blake2bWrite::<_, _, Challenge255<_>>::init(vec![]);
-        c.bench_function(&prover_name, |b| {
-            b.iter(|| {
-                create_proof::<KZGCommitmentScheme<Bn256>, ProverGWC<_>, _, _, _, _>(
-                    &params,
-                    &pk,
-                    &[circuit.clone()],
-                    &[public_inputs.as_slice()],
-                    &mut OsRng,
-                    &mut transcript,
-                )
-                .expect("proof generation failed")
-            })
-        });
-        let proof: Vec<u8> = transcript.finalize();
-        // let mut file = File::create(&proof_path).expect("Failed to create proof");
-        // file.write_all(&proof[..]).expect("Failed to write proof");
-        write_to_file(&proof_path, &proof);
-    }
+    let mut transcript = Blake2bWrite::<_, _, Challenge255<_>>::init(vec![]);
+    c.bench_function(&prover_name, |b| {
+        b.iter(|| {
+            create_proof::<KZGCommitmentScheme<Bn256>, ProverGWC<_>, _, _, _, _>(
+                &params,
+                &pk,
+                &[circuit.clone()],
+                &[public_inputs.as_slice()],
+                &mut OsRng,
+                &mut transcript,
+            )
+            .expect("proof generation failed")
+        })
+    });
+    let proof: Vec<u8> = transcript.finalize();
+
+    write_to_file(&proof_path, &proof);
+
     let mut proof_fs = File::open(proof_path).expect("Failed to load proof");
     let mut proof = Vec::<u8>::new();
     proof_fs
@@ -226,7 +222,7 @@ fn main() {
         .nresamples(10); // # of iteration
 
     let benches: Vec<Box<dyn Fn(&mut Criterion)>> =
-        vec![Box::new(|c| bench_aggregate::<16>("skde aggregate", c))];
+        vec![Box::new(|c| bench_aggregate::<20>("skde aggregate", c))];
 
     for bench in benches {
         bench(&mut criterion);
