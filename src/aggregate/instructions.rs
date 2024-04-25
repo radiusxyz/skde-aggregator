@@ -1,9 +1,8 @@
 use crate::{
-    AggregateExtractionKey, AggregatePublicParams, AssignedAggregatePartialKeys,
-    AssignedAggregatePublicParams, AssignedExtractionKey,
+    maingate, AggregateExtractionKey, AggregatePublicParams, AssignedAggregatePartialKeys, AssignedAggregatePublicParams, AssignedExtractionKey
 };
 use ff::PrimeField;
-use halo2wrong::halo2::plonk::Error;
+use halo2_proofs::plonk::Error;
 use maingate::RegionCtx;
 
 /// Instructions for Aggregate operations.

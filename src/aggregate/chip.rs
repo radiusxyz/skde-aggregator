@@ -1,25 +1,20 @@
-use crate::big_integer::{BigIntChip, BigIntConfig, BigIntInstructions};
 use crate::{
+    big_integer::{BigIntChip, BigIntConfig, BigIntInstructions},
+    ExtractionKey,
+};
+
+use crate::{
+    maingate::{instructions::decompose_big, MainGate, RangeChip, RegionCtx},
     AggregateExtractionKey, AggregateInstructions, AggregatePublicParams,
     AssignedAggregatePartialKeys, AssignedAggregatePublicParams, AssignedExtractionKey,
     UnassignedInteger, LIMB_COUNT, LIMB_WIDTH,
 };
-use halo2wrong::halo2::plonk::Error;
-use maingate::{decompose_big, MainGate, RangeChip, RegionCtx};
-
 use ff::PrimeField;
-use num_bigint::BigUint;
+use halo2_proofs::plonk::Error;
+// use num_bigint::BigUint;
 
 use super::MAX_SEQUENCER_NUMBER;
 use std::marker::PhantomData;
-
-#[derive(Clone, Debug)]
-pub struct ExtractionKey {
-    pub u: BigUint,
-    pub v: BigUint,
-    pub y: BigUint,
-    pub w: BigUint,
-}
 
 #[derive(Clone, Debug)]
 pub struct DecomposedExtractionKey<F: PrimeField> {
@@ -304,15 +299,17 @@ impl<F: PrimeField> AggregateChip<F> {
 #[cfg(test)]
 mod test {
 
-    use crate::{aggregate, UnassignedInteger, BITS_LEN};
+    use crate::{
+        aggregate, maingate::RangeInstructions, ExtractionKey, UnassignedInteger, BITS_LEN,
+    };
 
     use super::*;
     use ff::FromUniformBytes;
-    use halo2wrong::halo2::{
+    use halo2_proofs::{
         circuit::{Chip, SimpleFloorPlanner},
+        dev::MockProver,
         plonk::{Circuit, Column, ConstraintSystem, Instance},
     };
-    use maingate::{decompose_big, mock_prover_verify, RangeInstructions};
     use num_bigint::BigUint;
     use num_bigint::RandomBits;
     use rand::{thread_rng, Rng};
@@ -332,7 +329,7 @@ mod test {
     }
 
     pub fn apply_aggregate_key_instance_constraints<F: PrimeField>(
-        layouter: &mut impl halo2wrong::halo2::circuit::Layouter<F>,
+        layouter: &mut impl halo2_proofs::circuit::Layouter<F>,
         valid_agg_key_result: &AssignedExtractionKey<F>,
         num_limbs: usize,
         instances: Column<Instance>,
@@ -367,7 +364,7 @@ mod test {
     }
 
     fn apply_partial_key_instance_constraints<F: PrimeField>(
-        layouter: &mut impl halo2wrong::halo2::circuit::Layouter<F>,
+        layouter: &mut impl halo2_proofs::circuit::Layouter<F>,
         partial_key_result: &AssignedAggregatePartialKeys<F>,
         num_limbs: usize,
         instances: Column<Instance>,
@@ -437,7 +434,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let aggregate_chip = self.aggregate_chip(config);
             let bigint_chip = aggregate_chip.bigint_chip();
@@ -579,10 +576,15 @@ mod test {
             combined_limbs.extend(combined_partial_limbs);
 
             let public_inputs = vec![combined_limbs];
-            mock_prover_verify(&circuit, public_inputs);
+            let k = 20;
+            let prover = match MockProver::run(k, &circuit, public_inputs) {
+                Ok(prover) => prover,
+                Err(e) => panic!("{:#?}", e),
+            };
+            assert_eq!(prover.verify().is_err(), false);
         }
 
-        use halo2wrong::curves::bn256::Fq as BnFq;
+        use halo2_proofs::halo2curves::bn256::Fq as BnFq;
         // use halo2wrong::curves::pasta::{Fp as PastaFp, Fq as PastaFq};
         run::<BnFq>();
         // run::<PastaFp>();

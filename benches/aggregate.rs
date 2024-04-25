@@ -1,7 +1,4 @@
-use halo2wrong::curves::bn256::Fr;
-use halo2wrong::halo2::halo2curves::bn256::{Bn256, G1Affine};
-
-use halo2wrong::halo2::{
+use halo2_proofs::{
     plonk::*,
     poly::{commitment::Params, VerificationStrategy},
     poly::{
@@ -16,6 +13,8 @@ use halo2wrong::halo2::{
     transcript::{TranscriptReadBuffer, TranscriptWriterBuffer},
     SerdeFormat,
 };
+use halo2_proofs::halo2curves::bn256::Fr;
+use halo2_proofs::halo2curves::bn256::{Bn256, G1Affine};
 use skde_aggregator::{
     aggregate, AggregateCircuit, DecomposedExtractionKey, ExtractionKey, BITS_LEN,
     MAX_SEQUENCER_NUMBER,
@@ -107,12 +106,12 @@ fn bench_aggregate<const K: u32>(name: &str, c: &mut Criterion) {
 
     // set public input
     let combined_partial_limbs: Vec<Fr> =
-        aggregate::chip::ExtractionKey::decompose_and_combine_all_partial_keys(
+        skde_aggregator::ExtractionKey::decompose_and_combine_all_partial_keys(
             partial_keys.clone(),
         );
 
     let decomposed_extraction_key: DecomposedExtractionKey<Fr> =
-        aggregate::chip::ExtractionKey::decompose_extraction_key(&aggregated_key.clone());
+        skde_aggregator::ExtractionKey::decompose_extraction_key(&aggregated_key.clone());
     let mut combined_limbs = decomposed_extraction_key.combine_limbs();
 
     combined_limbs.extend(combined_partial_limbs);
@@ -222,7 +221,7 @@ fn main() {
         .nresamples(10); // # of iteration
 
     let benches: Vec<Box<dyn Fn(&mut Criterion)>> =
-        vec![Box::new(|c| bench_aggregate::<20>("skde aggregate", c))];
+        vec![Box::new(|c| bench_aggregate::<17>("skde aggregate", c))];
 
     for bench in benches {
         bench(&mut criterion);

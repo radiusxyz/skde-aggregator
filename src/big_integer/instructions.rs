@@ -1,6 +1,6 @@
-use crate::{AssignedInteger, Fresh, Muled, RefreshAux, UnassignedInteger};
-use halo2wrong::halo2::{arithmetic::Field, plonk::Error};
-use maingate::{AssignedValue, RegionCtx};
+use crate::{maingate::{AssignedValue, RegionCtx}, AssignedInteger, Fresh, Muled, RangeType, RefreshAux, UnassignedInteger};
+use ff::Field;
+use halo2_proofs::plonk::Error;
 use num_bigint::BigUint;
 
 /// Instructions for big-integer operations.

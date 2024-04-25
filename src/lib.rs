@@ -2,17 +2,15 @@ pub mod big_integer;
 pub use big_integer::*;
 pub mod aggregate;
 pub use crate::aggregate::*;
+pub mod maingate;
 use ff::PrimeField;
-use halo2wrong::{
-    halo2::{
-        circuit::{Chip, SimpleFloorPlanner},
-        plonk::{Circuit, Column, ConstraintSystem, Error, Instance},
-    },
-    RegionCtx,
+use halo2_proofs::{
+    circuit::{Chip, Layouter, SimpleFloorPlanner}, dev::MockProver, plonk::{Circuit, Column, ConstraintSystem, Error, Instance}
 };
-use maingate::{decompose_big, mock_prover_verify, MainGate, RangeChip, RangeInstructions};
+use maingate::{instructions::decompose_big, MainGate, RangeChip, RangeInstructions, RegionCtx};
 use num_bigint::BigUint;
 use std::marker::PhantomData;
+
 
 #[derive(Clone, Debug)]
 pub struct AggregateCircuit<F: PrimeField> {
@@ -29,7 +27,7 @@ impl<F: PrimeField> AggregateCircuit<F> {
     }
 }
 pub fn apply_aggregate_key_instance_constraints<F: PrimeField>(
-    layouter: &mut impl halo2wrong::halo2::circuit::Layouter<F>,
+    layouter: &mut impl Layouter<F>,
     valid_agg_key_result: &AssignedExtractionKey<F>,
     num_limbs: usize,
     instances: Column<Instance>,
@@ -64,7 +62,7 @@ pub fn apply_aggregate_key_instance_constraints<F: PrimeField>(
 }
 
 fn apply_partial_key_instance_constraints<F: PrimeField>(
-    layouter: &mut impl halo2wrong::halo2::circuit::Layouter<F>,
+    layouter: &mut impl Layouter<F>,
     partial_key_result: &AssignedAggregatePartialKeys<F>,
     num_limbs: usize,
     instances: Column<Instance>,
@@ -133,7 +131,7 @@ impl<F: PrimeField> Circuit<F> for AggregateCircuit<F> {
     fn synthesize(
         &self,
         config: Self::Config,
-        mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+        mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         let aggregate_chip = self.aggregate_chip(config);
         let bigint_chip = aggregate_chip.bigint_chip();
@@ -156,7 +154,7 @@ impl<F: PrimeField> Circuit<F> for AggregateCircuit<F> {
                 let mut partial_keys_assigned = vec![];
                 for i in 0..MAX_SEQUENCER_NUMBER {
                     let decomposed_partial_key =
-                        aggregate::chip::ExtractionKey::decompose_extraction_key(
+                        crate::ExtractionKey::decompose_extraction_key(
                             &self.partial_keys[i],
                         );
 
@@ -213,7 +211,7 @@ impl<F: PrimeField> Circuit<F> for AggregateCircuit<F> {
 
 #[test]
 fn test_aggregate_circuit() {
-    use halo2wrong::curves::bn256::Fr;
+    use halo2_proofs::halo2curves::bn256::Fr;
     use num_bigint::RandomBits;
     use rand::{thread_rng, Rng};
     let mut rng = thread_rng();
@@ -253,12 +251,10 @@ fn test_aggregate_circuit() {
     }
 
     let combined_partial_limbs: Vec<Fr> =
-        aggregate::chip::ExtractionKey::decompose_and_combine_all_partial_keys(
-            partial_keys.clone(),
-        );
+        crate::ExtractionKey::decompose_and_combine_all_partial_keys(partial_keys.clone());
 
     let decomposed_extraction_key: DecomposedExtractionKey<Fr> =
-        aggregate::chip::ExtractionKey::decompose_extraction_key(&aggregated_key);
+        crate::ExtractionKey::decompose_extraction_key(&aggregated_key);
     let mut combined_limbs = decomposed_extraction_key.combine_limbs();
 
     let circuit = AggregateCircuit::<Fr> {
@@ -272,5 +268,10 @@ fn test_aggregate_circuit() {
     combined_limbs.extend(combined_partial_limbs);
 
     let public_inputs = vec![combined_limbs];
-    mock_prover_verify(&circuit, public_inputs);
+    let k = 20;
+            let prover = match MockProver::run(k, &circuit, public_inputs) {
+                Ok(prover) => prover,
+                Err(e) => panic!("{:#?}", e)
+            };
+            assert_eq!(prover.verify().is_err(), false);
 }

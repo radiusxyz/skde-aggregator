@@ -1,14 +1,11 @@
 use std::marker::PhantomData;
 
 use crate::{
-    AssignedInteger, AssignedLimb, BigIntInstructions, Fresh, Muled, RangeType, RefreshAux,
-    UnassignedInteger,
+    maingate::{
+        instructions::{big_to_fe, decompose_big, fe_to_big}, AssignedValue, MainGate, MainGateConfig, MainGateInstructions, RangeChip, RangeConfig, RangeInstructions, RegionCtx
+    }, AssignedInteger, AssignedLimb, BigIntInstructions, Fresh, Muled, RangeType, RefreshAux, UnassignedInteger
 };
-use halo2wrong::halo2::{arithmetic::Field, circuit::Value, plonk::Error};
-use maingate::{
-    big_to_fe, decompose_big, fe_to_big, AssignedValue, MainGate, MainGateConfig,
-    MainGateInstructions, RangeChip, RangeConfig, RangeInstructions, RegionCtx,
-};
+use halo2_proofs::{circuit::Value, plonk::Error};
 
 use num_bigint::BigUint;
 
@@ -1379,13 +1376,12 @@ impl<F: PrimeField> BigIntChip<F> {
 #[cfg(test)]
 mod test {
     use std::str::FromStr;
-
-    //zeroknight
-    use ff::FromUniformBytes;
+    
+    use ff::{Field, FromUniformBytes};
 
     use super::*;
     use crate::big_pow_mod;
-    use halo2wrong::halo2::{
+    use halo2_proofs::{
         circuit::SimpleFloorPlanner,
         plonk::{Circuit, ConstraintSystem},
     };
@@ -1437,7 +1433,7 @@ mod test {
 
             #[test]
             fn $test_fn_name() {
-                use halo2wrong::halo2::dev::MockProver;
+                use halo2_proofs::dev::MockProver;
                 use num_bigint::RandomBits;
                 use rand::{thread_rng, Rng};
                 fn run<F: FromUniformBytes<64> + Ord>() {       // // zeroknight - use FromUnionFormBytes instead of PrimeField
@@ -1467,8 +1463,8 @@ mod test {
 
                 }
 
-                use halo2wrong::curves::bn256::Fq as BnFq;
-                use halo2wrong::curves::pasta::{Fp as PastaFp, Fq as PastaFq};
+                use halo2_proofs::halo2curves::bn256::Fq as BnFq;
+                use halo2_proofs::halo2curves::pasta::{Fp as PastaFp, Fq as PastaFq};
                 run::<BnFq>();
                 run::<PastaFp>();
                 run::<PastaFq>();
@@ -1485,7 +1481,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1527,7 +1523,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1563,7 +1559,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1603,7 +1599,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1641,7 +1637,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1679,7 +1675,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1714,7 +1710,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1757,7 +1753,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1807,7 +1803,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1842,7 +1838,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1876,7 +1872,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1916,7 +1912,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -1963,7 +1959,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2003,7 +1999,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2042,7 +2038,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2087,7 +2083,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2126,7 +2122,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2165,7 +2161,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2205,7 +2201,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2244,7 +2240,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2287,7 +2283,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2329,7 +2325,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2370,7 +2366,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2410,7 +2406,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2447,7 +2443,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2484,7 +2480,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2521,7 +2517,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2558,7 +2554,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2595,7 +2591,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2632,7 +2628,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2669,7 +2665,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2706,7 +2702,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2743,7 +2739,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2780,7 +2776,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -2812,7 +2808,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             layouter.assign_region(
@@ -2845,7 +2841,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             layouter.assign_region(
@@ -2888,7 +2884,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             layouter.assign_region(
@@ -2928,7 +2924,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             layouter.assign_region(
@@ -3039,7 +3035,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             layouter.assign_region(
@@ -3081,7 +3077,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             layouter.assign_region(
@@ -3123,7 +3119,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -3164,7 +3160,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -3204,7 +3200,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -3246,7 +3242,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -3289,7 +3285,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             let bigint_chip = self.bigint_chip(config);
             let num_limbs = Self::BITS_LEN / Self::LIMB_WIDTH;
@@ -3324,7 +3320,7 @@ mod test {
         fn synthesize(
             &self,
             config: Self::Config,
-            mut layouter: impl halo2wrong::halo2::circuit::Layouter<F>,
+            mut layouter: impl halo2_proofs::circuit::Layouter<F>,
         ) -> Result<(), Error> {
             Ok(())
         }
@@ -3333,7 +3329,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_unimplemented() {
-        use halo2wrong::curves::bn256::Fq;
+        use halo2_proofs::halo2curves::bn256::Fq;
         let a = BigUint::default();
         let b = BigUint::default();
         let n = BigUint::default();
