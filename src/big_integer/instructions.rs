@@ -1,4 +1,7 @@
-use crate::{maingate::{AssignedValue, RegionCtx}, AssignedInteger, Fresh, Muled, RangeType, RefreshAux, UnassignedInteger};
+use crate::{
+    maingate::{AssignedValue, RegionCtx},
+    AssignedInteger, Fresh, Muled, RangeType, RefreshAux, UnassignedInteger,
+};
 use ff::Field;
 use halo2_proofs::plonk::Error;
 use num_bigint::BigUint;

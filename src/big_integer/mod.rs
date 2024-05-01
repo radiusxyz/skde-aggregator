@@ -3,13 +3,13 @@ mod instructions;
 mod utils;
 use std::marker::PhantomData;
 
-pub use chip::*;
-pub use instructions::*;
-pub use utils::*;
 use crate::maingate::instructions::fe_to_big;
+pub use chip::*;
 use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{AssignedCell, Value};
+pub use instructions::*;
 use num_bigint::BigUint;
+pub use utils::*;
 /// AssignedValue
 pub type AssignedValue<F> = AssignedCell<F, F>;
 /// AssignedCondition

@@ -2,8 +2,12 @@ use std::marker::PhantomData;
 
 use crate::{
     maingate::{
-        instructions::{big_to_fe, decompose_big, fe_to_big}, AssignedValue, MainGate, MainGateConfig, MainGateInstructions, RangeChip, RangeConfig, RangeInstructions, RegionCtx
-    }, AssignedInteger, AssignedLimb, BigIntInstructions, Fresh, Muled, RangeType, RefreshAux, UnassignedInteger
+        instructions::{big_to_fe, decompose_big, fe_to_big},
+        AssignedValue, MainGate, MainGateConfig, MainGateInstructions, RangeChip, RangeConfig,
+        RangeInstructions, RegionCtx,
+    },
+    AssignedInteger, AssignedLimb, BigIntInstructions, Fresh, Muled, RangeType, RefreshAux,
+    UnassignedInteger,
 };
 use halo2_proofs::{circuit::Value, plonk::Error};
 
@@ -1376,7 +1380,7 @@ impl<F: PrimeField> BigIntChip<F> {
 #[cfg(test)]
 mod test {
     use std::str::FromStr;
-    
+
     use ff::{Field, FromUniformBytes};
 
     use super::*;

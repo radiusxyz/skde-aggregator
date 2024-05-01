@@ -1,5 +1,6 @@
 use crate::{
-    maingate, AggregateExtractionKey, AggregatePublicParams, AssignedAggregatePartialKeys, AssignedAggregatePublicParams, AssignedExtractionKey
+    maingate, AggregateExtractionKey, AggregatePublicParams, AssignedAggregatePartialKeys,
+    AssignedAggregatePublicParams, AssignedExtractionKey,
 };
 use ff::PrimeField;
 use halo2_proofs::plonk::Error;
