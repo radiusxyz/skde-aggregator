@@ -39,3 +39,6 @@ criterion = { version = "0.3", features = ["html_reports"] }
 doctest = false
 bench = false
 
+[[bench]]
+name = "agg_commit"
+harness = false

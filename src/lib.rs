@@ -477,11 +477,9 @@ mod tests {
         let mut combined_limbs = decomposed_extraction_key.combine_limbs();
         // 6151808128436302227947693167395663590637705150914724865306430048708093150080 (0x0d99cccd7a7b928b414da742296875e18a5ba980ce93470082ec6c73f62a0380)
 
-        let message_len = 1536;
-
         let formatted_key_vecs: Vec<Vec<BigUint>> =
             CommitAndAggregationCircuit::<PC>::format_extraction_keys(&partial_keys);
-        let supposed_bytes = message_len as u128 * HASHABLE_DOMAIN_SPEC;
+        let supposed_bytes = MSG_LEN as u128 * HASHABLE_DOMAIN_SPEC;
 
         let hashed: Vec<Fr> = formatted_key_vecs
             .iter()
