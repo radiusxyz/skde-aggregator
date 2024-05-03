@@ -37,3 +37,6 @@ bench = false
 name = "aggregate"
 harness = false
 
+[[bench]]
+name = "aggregate_with_hash"
+harness = false

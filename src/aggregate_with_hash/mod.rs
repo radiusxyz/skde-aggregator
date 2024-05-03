@@ -4,26 +4,23 @@ pub mod instructions;
 use halo2wrong::halo2::circuit::Value;
 pub use instructions::*;
 
-use ff::{Field, PrimeField};
+use ff::PrimeField;
 
 use crate::big_integer::*;
 
-pub const MAX_SEQUENCER_NUMBER: usize = 27;
-pub const BITS_LEN: usize = 2048; // n's bit length
-pub const LIMB_WIDTH: usize = 64;
-pub const LIMB_COUNT: usize = BITS_LEN / LIMB_WIDTH;
+pub const MAX_SEQUENCER_NUMBER2: usize = 20;
 
-/// Aggregate extraction key that is about to be assigned.
+/// AggregateWithHash extraction key that is about to be assigned.
 #[derive(Clone, Debug)]
-pub struct AggregateExtractionKey<F: Field> {
+pub struct AggregateWithHashExtractionKey<F: PrimeField> {
     pub u: UnassignedInteger<F>,
     pub v: UnassignedInteger<F>,
     pub y: UnassignedInteger<F>,
     pub w: UnassignedInteger<F>,
 }
 
-impl<F: PrimeField> AggregateExtractionKey<F> {
-    /// Creates new [`AggregateExtractionKey`] from `u, v, y, w`.
+impl<F: PrimeField> AggregateWithHashExtractionKey<F> {
+    /// Creates new [`AggregateWithHashExtractionKey`] from `u, v, y, w`.
     ///
     /// # Arguments
     /// * u - a parameter `u`.
@@ -32,7 +29,7 @@ impl<F: PrimeField> AggregateExtractionKey<F> {
     /// * w - a parameter `w`.
     ///
     /// # Return values
-    /// Returns new [`AggregateExtractionKey`].
+    /// Returns new [`AggregateWithHashExtractionKey`].
     pub fn new(
         u: UnassignedInteger<F>,
         v: UnassignedInteger<F>,
@@ -63,17 +60,17 @@ impl<F: PrimeField> AggregateExtractionKey<F> {
     }
 }
 
-/// An assigned Aggregate extraction key.
+/// An assigned AggregateWithHash extraction key.
 #[derive(Clone, Debug)]
-pub struct AssignedExtractionKey<F: PrimeField> {
+pub struct AssignedAggregateWithHashExtractionKey<F: PrimeField> {
     pub u: AssignedInteger<F, Fresh>,
     pub v: AssignedInteger<F, Fresh>,
     pub y: AssignedInteger<F, Fresh>,
     pub w: AssignedInteger<F, Fresh>,
 }
 
-impl<F: PrimeField> AssignedExtractionKey<F> {
-    /// Creates new [`AssignedExtractionKey`] from assigned `u,v,y,w`.
+impl<F: PrimeField> AssignedAggregateWithHashExtractionKey<F> {
+    /// Creates new [`AssignedAggregateWithHashExtractionKey`] from assigned `u,v,y,w`.
     ///
     /// # Arguments
     /// * u - an assigned parameter `u`.
@@ -82,7 +79,7 @@ impl<F: PrimeField> AssignedExtractionKey<F> {
     /// * w - an assigned parameter `uw`.
     ///
     /// # Return values
-    /// Returns new [`AssignedExtractionKey`].
+    /// Returns new [`AssignedAggregateWithHashExtractionKey`].
     pub fn new(
         u: AssignedInteger<F, Fresh>,
         v: AssignedInteger<F, Fresh>,
@@ -93,22 +90,23 @@ impl<F: PrimeField> AssignedExtractionKey<F> {
     }
 }
 
-/// Aggregate public key that is about to be assigned.
+/// Public Parameters that is about to be assigned.
 #[derive(Clone, Debug)]
-pub struct AggregatePublicParams<F: PrimeField> {
+pub struct AggregateWithHashPublicParams<F: PrimeField> {
     /// a modulus parameter
     pub n: UnassignedInteger<F>,
     pub n_square: UnassignedInteger<F>,
 }
 
-impl<F: PrimeField> AggregatePublicParams<F> {
-    /// Creates new [`AggregatePublicParams`] from `n`.
+impl<F: PrimeField> AggregateWithHashPublicParams<F> {
+    /// Creates new [`AggregateWithHashPublicParams`] from `n`.
     ///
     /// # Arguments
     /// * n - an integer of `n`.
+    /// * n_square - an integer of `n^2`.
     ///
     /// # Return values
-    /// Returns new [`AggregatePublicParams`].
+    /// Returns new [`AggregateWithHashPublicParams`].
     pub fn new(n: UnassignedInteger<F>, n_square: UnassignedInteger<F>) -> Self {
         Self { n, n_square }
     }
@@ -127,70 +125,71 @@ impl<F: PrimeField> AggregatePublicParams<F> {
     }
 }
 
-/// An assigned Aggregate public key.
+/// Assigned AggregateWithHash public params.
 #[derive(Clone, Debug)]
-pub struct AssignedAggregatePublicParams<F: PrimeField> {
-    /// a modulus parameter
+pub struct AssignedAggregateWithHashPublicParams<F: PrimeField> {
+    /// modulus parameter
     pub n: AssignedInteger<F, Fresh>,
     pub n_square: AssignedInteger<F, Fresh>,
 }
 
-impl<F: PrimeField> AssignedAggregatePublicParams<F> {
-    /// Creates new [`AssignedAggregatePublicParams`] from assigned `n`.
+impl<F: PrimeField> AssignedAggregateWithHashPublicParams<F> {
+    /// Creates new [`AssignedAggregateWithHashPublicParams`] from assigned `n`.
     ///
     /// # Arguments
     /// * n - an assigned integer of `n`.
+    /// * n_square - an assigned integer of `n^2`.
     ///
     /// # Return values
-    /// Returns new [`AssignedAggregatePublicParams`].
+    /// Returns new [`AssignedAggregateWithHashPublicParams`].
     pub fn new(n: AssignedInteger<F, Fresh>, n_square: AssignedInteger<F, Fresh>) -> Self {
         Self { n, n_square }
     }
 }
 
-/// Aggregate public key that is about to be assigned.
+/// AggregateWithHash partial keys that is about to be assigned.
 #[derive(Clone, Debug)]
-pub struct AggregatePartialKeys<F: PrimeField> {
+pub struct AggregateWithHashPartialKeys<F: PrimeField> {
     /// a modulus parameter
-    pub partial_keys: Vec<AggregateExtractionKey<F>>,
+    pub partial_keys: Vec<AggregateWithHashExtractionKey<F>>,
 }
 
-impl<F: PrimeField> AggregatePartialKeys<F> {
-    /// Creates new [`AggregatePartialKeys`] from `n`.
+impl<F: PrimeField> AggregateWithHashPartialKeys<F> {
+    /// Creates new [`AggregateWithHashPartialKeys`] from `n`.
     ///
     /// # Arguments
     /// * partial_keys - a vector of `extraction keys`.
     ///
     /// # Return values
-    /// Returns new [`AggregatePartialKeys`].
-    pub fn new(partial_keys: Vec<AggregateExtractionKey<F>>) -> Self {
+    /// Returns new [`AggregateWithHashPartialKeys`].
+    pub fn new(partial_keys: Vec<AggregateWithHashExtractionKey<F>>) -> Self {
         Self { partial_keys }
     }
 
     pub fn without_witness(num_limbs: usize) -> Self {
         let mut partial_keys = vec![];
-        for _ in 0..MAX_SEQUENCER_NUMBER {
-            partial_keys.push(AggregateExtractionKey::without_witness(num_limbs));
+        for _ in 0..MAX_SEQUENCER_NUMBER2 {
+            partial_keys.push(AggregateWithHashExtractionKey::without_witness(num_limbs));
         }
         Self { partial_keys }
     }
 }
 
-/// An assigned Aggregate public key.
+/// Assigned AggregateWithHash partial keys.
 #[derive(Clone, Debug)]
-pub struct AssignedAggregatePartialKeys<F: PrimeField> {
-    pub partial_keys: Vec<AssignedExtractionKey<F>>,
+pub struct AssignedAggregateWithHashPartialKeys<F: PrimeField> {
+    pub partial_keys: Vec<AssignedAggregateWithHashExtractionKey<F>>,
 }
 
-impl<F: PrimeField> AssignedAggregatePartialKeys<F> {
-    /// Creates new [`AssignedAggregatePartialKeys`] from assigned `n`.
+impl<F: PrimeField> AssignedAggregateWithHashPartialKeys<F> {
+    /// Creates new [`AssignedAggregateWithHashPartialKeys`] from assigned `n`.
     ///
     /// # Arguments
     /// * partial_keys - an assigned vector of `extraction keys`.
     ///
     /// # Return values
-    /// Returns new [`AssignedAggregatePartialKeys`].
-    pub fn new(partial_keys: Vec<AssignedExtractionKey<F>>) -> Self {
+    /// Returns new [`AssignedAggregateWithHashPartialKeys`].
+    pub fn new(partial_keys: Vec<AssignedAggregateWithHashExtractionKey<F>>) -> Self {
         Self { partial_keys }
     }
 }
